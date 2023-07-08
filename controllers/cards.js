@@ -13,8 +13,14 @@ const createCard = (req, res) => {
 
 const deleteCardById = (req, res) => {
   Card.findByIdAndRemove(req.params.cardId)
-    .then(() => res.send({ message: 'Пост удален' }))
-    .catch(() => res.status(404).send({ message: 'Карточка с указанным _id не найдена.' }));
+    .then((card) => {
+      if (!card) {
+        res.status(404).send({ message: 'Карточка с указанным _id не найдена.' });
+        return;
+      }
+      res.send({ message: 'Пост удален' });
+    })
+    .catch(() => res.status(400).send({ message: 'Карточка с указанным _id не найдена.' }));
 };
 
 const putLikeCard = (req, res) => {
@@ -25,10 +31,16 @@ const putLikeCard = (req, res) => {
       new: true,
     },
   )
-    .then((card) => res.status(200).send(card))
+    .then((card) => {
+      if (!card) {
+        res.status(404).send({ message: 'Передан несуществующий _id карточки.' });
+        return;
+      }
+      res.status(200).send(card);
+    })
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(404).send({ message: 'Передан несуществующий _id карточки.' });
+        res.status(400).send({ message: 'Передан несуществующий _id карточки.' });
         return;
       }
       res.status(400).send(err.name);
@@ -43,10 +55,16 @@ const deleteLikeCard = (req, res) => {
       new: true,
     },
   )
-    .then((card) => res.status(200).send(card))
+    .then((card) => {
+      if (!card) {
+        res.status(404).send({ message: 'Передан несуществующий _id карточки.' });
+        return;
+      }
+      res.status(200).send(card);
+    })
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(404).send({ message: 'Передан несуществующий _id карточки.' });
+        res.status(400).send({ message: 'Передан несуществующий _id карточки.' });
         return;
       }
       res.send(err.message);
