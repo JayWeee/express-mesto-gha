@@ -40,9 +40,8 @@ const createUser = (req, res) => {
     });
 };
 
-const updateUserProfile = (req, res) => {
-  const { name, about } = req.body;
-  User.findByIdAndUpdate(req.user._id, { name, about }, {
+const updateUser = (req, res, obj) => {
+  User.findByIdAndUpdate(req.user._id, obj, {
     new: true,
     runValidators: true,
   }).then((user) => res.status(HTTP_STATUS_OK).send(user))
@@ -55,19 +54,14 @@ const updateUserProfile = (req, res) => {
     });
 };
 
+const updateUserProfile = (req, res) => {
+  const { name, about } = req.body;
+  return updateUser(req, res, { name, about });
+};
+
 const updateUserAvatar = (req, res) => {
   const { avatar } = req.body;
-  User.findByIdAndUpdate(req.user._id, { avatar }, {
-    new: true,
-    runValidators: true,
-  }).then((user) => res.status(HTTP_STATUS_OK).send(user))
-    .catch((err) => {
-      if (err instanceof ValidationError) {
-        res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Переданы некорректные данные при обновлении аватара.' });
-      } else {
-        res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Ошибка сервера.' });
-      }
-    });
+  return updateUser(req, res, { avatar });
 };
 
 module.exports = {
