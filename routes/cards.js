@@ -1,4 +1,3 @@
-const bodyParser = require('body-parser');
 const router = require('express').Router();
 const {
   getCards,
@@ -9,7 +8,7 @@ const {
 } = require('../controllers/cards');
 
 router.get('/', getCards);
-router.post('/', bodyParser.json(), createCard);
+router.post('/', createCard);
 router.delete('/:cardId', deleteCardById);
 router.put('/:cardId/likes', putLikeCard);
 router.delete('/:cardId/likes', deleteLikeCard);
