@@ -1,40 +1,41 @@
-const {
-  HTTP_STATUS_OK,
-  HTTP_STATUS_BAD_REQUEST,
-  HTTP_STATUS_NOT_FOUND,
-  HTTP_STATUS_INTERNAL_SERVER_ERROR,
-} = require('http2').constants;
-
+const { HTTP_STATUS_OK } = require('http2').constants;
 const { ValidationError, CastError } = require('mongoose').Error;
+
 const Card = require('../models/card');
 
-const getCards = (req, res) => {
+const NotFoundErr = require('../errors/not-found-err');
+const BadRequestErr = require('../errors/bad-request-err');
+const ForbiddenErr = require('../errors/forbidden-err');
+
+const getCards = (req, res, next) => {
   Card.find({})
     .then((cards) => res.status(HTTP_STATUS_OK).send(cards))
-    .catch(() => res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Ошибка сервера.' }));
+    .catch(next);
 };
 
-const createCard = (req, res) => {
+const createCard = (req, res, next) => {
   const { name, link } = req.body;
   Card.create({ name, link, owner: req.user._id })
     .then((card) => res.status(HTTP_STATUS_OK).send(card))
     .catch((err) => {
       if (err instanceof ValidationError) {
-        res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Переданы некорректные данные при создании карточки.' });
+        next(new BadRequestErr('Переданы некорректные данные при создании карточки.'));
       } else {
-        res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Ошибка сервера.' });
+        next(err);
       }
     });
 };
 
-const deleteCardById = (req, res) => {
+const deleteCardById = (req, res, next) => {
   const { cardId } = req.params;
 
   Card.findById(cardId)
-    .orFail(() => res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'Карточка с указанным _id не найдена.' }))
+    .orFail(() => {
+      throw new NotFoundErr('Карточка с указанным _id не найдена.');
+    })
     .then((card) => {
       if (card.owner.toString() !== req.user._id) {
-        res.send({ message: 'Вы не можете удалять чужие карточки.' });
+        next(new ForbiddenErr('Вы не можете удалять чужие карточки.'));
       } else {
         Card.findByIdAndDelete(cardId)
           .then(res.status(HTTP_STATUS_OK).send({ message: 'Пост удален.' }));
@@ -42,49 +43,42 @@ const deleteCardById = (req, res) => {
     })
     .catch((err) => {
       if (err instanceof CastError) {
-        res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Карточка с указанным _id не найдена.' });
+        next(new BadRequestErr('Карточка с указанным _id не найдена.'));
       } else {
-        res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Ошибка сервера.' });
+        next(err);
       }
     });
 };
 
-const putLikeCard = (req, res) => {
+const handleLikeCard = (req, res, likeData, next) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
-    { $addToSet: { likes: req.user._id } },
+    likeData,
     {
       new: true,
     },
   )
-    .orFail(() => res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'Передан несуществующий _id карточки.' }))
+    .orFail(() => {
+      throw new NotFoundErr('Передан несуществующий _id карточки.');
+    })
     .then((card) => res.status(HTTP_STATUS_OK).send(card))
     .catch((err) => {
       if (err instanceof CastError) {
-        res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Передан несуществующий _id карточки.' });
+        next(new BadRequestErr('Передан несуществующий _id карточки.'));
       } else {
-        res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Ошибка сервера.' });
+        next(err);
       }
     });
 };
 
-const deleteLikeCard = (req, res) => {
-  Card.findByIdAndUpdate(
-    req.params.cardId,
-    { $pull: { likes: req.user._id } },
-    {
-      new: true,
-    },
-  )
-    .orFail(() => res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'Передан несуществующий _id карточки.' }))
-    .then((card) => res.status(HTTP_STATUS_OK).send(card))
-    .catch((err) => {
-      if (err instanceof CastError) {
-        res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Передан несуществующий _id карточки.' });
-      } else {
-        res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Ошибка сервера.' });
-      }
-    });
+const putLikeCard = (req, res, next) => {
+  const putLike = { $addToSet: { likes: req.user._id } };
+  return handleLikeCard(req, res, putLike, next);
+};
+
+const deleteLikeCard = (req, res, next) => {
+  const removeLike = { $pull: { likes: req.user._id } };
+  return handleLikeCard(req, res, removeLike, next);
 };
 
 module.exports = {
