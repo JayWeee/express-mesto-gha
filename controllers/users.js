@@ -1,4 +1,4 @@
-const { HTTP_STATUS_OK } = require('http2').constants;
+const { HTTP_STATUS_OK, HTTP_STATUS_CREATED } = require('http2').constants;
 const { hash, compare } = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { ValidationError, CastError } = require('mongoose').Error;
@@ -50,7 +50,7 @@ const createUser = (req, res, next) => {
       email,
       password: hashPassword,
     }))
-    .then((user) => res.status(HTTP_STATUS_OK).send({
+    .then((user) => res.status(HTTP_STATUS_CREATED).send({
       _id: user._id,
       name: user.name,
       about: user.about,

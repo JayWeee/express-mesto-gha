@@ -4,7 +4,7 @@ const regExUrl = /^https?:\/\/(?:w{3}\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-
 
 const validateGetUserById = celebrate({
   params: Joi.object().keys({
-    userId: Joi.string().alphanum().min(24).max(24),
+    userId: Joi.string().length(24).hex().required(),
   }),
 });
 
@@ -42,7 +42,7 @@ const validateCreateCard = celebrate({
 
 const validateCardId = celebrate({
   params: Joi.object().keys({
-    cardId: Joi.string().alphanum().min(24).max(24),
+    cardId: Joi.string().hex().length(24).required(),
   }),
 });
 

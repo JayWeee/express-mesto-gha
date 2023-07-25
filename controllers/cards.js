@@ -1,4 +1,4 @@
-const { HTTP_STATUS_OK } = require('http2').constants;
+const { HTTP_STATUS_OK, HTTP_STATUS_CREATED } = require('http2').constants;
 const { ValidationError, CastError } = require('mongoose').Error;
 
 const Card = require('../models/card');
@@ -16,7 +16,7 @@ const getCards = (req, res, next) => {
 const createCard = (req, res, next) => {
   const { name, link } = req.body;
   Card.create({ name, link, owner: req.user._id })
-    .then((card) => res.status(HTTP_STATUS_OK).send(card))
+    .then((card) => res.status(HTTP_STATUS_CREATED).send(card))
     .catch((err) => {
       if (err instanceof ValidationError) {
         next(new BadRequestErr('Переданы некорректные данные при создании карточки.'));
@@ -37,7 +37,7 @@ const deleteCardById = (req, res, next) => {
       if (card.owner.toString() !== req.user._id) {
         next(new ForbiddenErr('Вы не можете удалять чужие карточки.'));
       } else {
-        Card.findByIdAndDelete(cardId)
+        Card.deleteOne(card)
           .then(res.status(HTTP_STATUS_OK).send({ message: 'Пост удален.' }));
       }
     })
