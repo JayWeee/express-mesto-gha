@@ -107,7 +107,7 @@ const login = (req, res, next) => {
           { expiresIn: '7d' },
         );
         res.cookie('token', token, { maxAge: 3600000 * 24 * 7, httpOnly: true })
-          .status(HTTP_STATUS_OK).send({ message: 'Успешная авторизация.' });
+          .status(HTTP_STATUS_OK).send({ userId: user._id });
       }))
     .catch(next);
 };
